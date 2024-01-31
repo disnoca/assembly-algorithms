@@ -6,7 +6,7 @@ section .text
 extern Malloc
 extern Free
 extern Realloc
-extern memcpy
+extern memmove
 
 global da_create
 global da_add
@@ -22,21 +22,11 @@ global da_clear
 global da_destroy
 
 ;	typedef struct {
-;		data_type* arr;
+;		int* arr;
 ;		int size, capacity;
 ;	} DynamicArray;
 
 ; Header Implementation
-
-	;endbr64
-	;pushq	%rbp
-	;.cfi_def_cfa_offset 16
-	;.cfi_offset 6, -16
-	;movq	%rsp, %rbp
-	;.cfi_def_cfa_register 6
-	;subq	$32, %rsp
-	;movl	%edi, -20(%rbp)
-	;movl	$16, %edi
 
 ; DynamicArray* (int capacity)
 da_create:
@@ -59,7 +49,7 @@ da_create:
 	leave
 	ret
 
-; void (DynamicArray* da, data_type data)
+; void (DynamicArray* da, int data)
 da_add:
 	push rbp
 	mov rbp, rsp
@@ -80,7 +70,44 @@ da_add_end:
 	leave
 	ret
 
+;void (DynamicArray* da, int data, int pos)
 da_add_at:
+	cmp edx, [rdi + 8]
+	je da_add
+	push rbp
+	mov rbp, rsp
+	sub rsp, 32
+	mov [rbp - 8], rdi
+	mov [rbp - 12], esi
+	mov [rbp - 16], edx
+	mov eax, [rdi + 8]
+	mov [rbp - 20], eax
+	cmp eax, [rdi + 12]
+	jl da_add_at_end
+	call resize
+	mov rdi, [rbp - 8]
+	mov rsi, [rbp - 12]
+	mov edx, [rbp - 16]
+	mov eax, [rbp - 20]
+
+da_add_at_end:
+	mov rdi, [rdi]
+	mov rsi, rdi
+	sal edx, 2
+	add rdi, rdx
+	add rsi, rdx
+	add rdi, 4
+	sal eax, 2
+	sub eax, edx
+	mov edx, eax
+	call memmove
+	mov rax, [rbp - 8]
+	mov rcx, [rax]
+	mov edx, [rbp - 12]
+	mov edi, [rbp - 16]
+	mov [rcx + rdi * 4], edx
+	inc dword [rax + 8]
+	leave
 	ret
 
 da_remove_last:
@@ -107,9 +134,18 @@ da_contains:
 da_clear:
 	ret
 
+;void (DynamicArray* da)
 da_destroy:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 16
+	mov rax, [rdi]
+	mov [rbp - 8], rax
+	call Free
+	mov rdi, [rbp - 8]
+	call Free
+	leave
 	ret
-
 
 ; Helper Functions
 

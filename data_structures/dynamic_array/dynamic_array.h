@@ -1,12 +1,10 @@
 #ifndef DYNAMIC_ARRAY
 #define DYNAMIC_ARRAY
 
-typedef int data_type;
-
 /* ---------------- Structs ---------------- */
 
 typedef struct {
-	data_type* arr;
+	int* arr;
 	int size, capacity;
 } DynamicArray;
 
@@ -14,23 +12,23 @@ typedef struct {
 
 DynamicArray* da_create(int capacity);
 
-void da_add(DynamicArray* da, data_type data);
+void da_add(DynamicArray* da, int data);
 
-void da_add_at(DynamicArray* da, data_type data, int pos);
+void da_add_at(DynamicArray* da, int data, int pos);
 
-data_type da_remove_last(DynamicArray* da);
+int da_remove_last(DynamicArray* da);
 
-data_type da_remove_at(DynamicArray* da, int pos);
+int da_remove_at(DynamicArray* da, int pos);
 
-bool da_remove(DynamicArray* da, data_type data);
+bool da_remove(DynamicArray* da, int data);
 
-data_type da_get(DynamicArray* da, int pos);
+int da_get(DynamicArray* da, int pos);
 
-data_type da_set(DynamicArray* da, data_type data, int pos);
+int da_set(DynamicArray* da, int data, int pos);
 
-int da_index_of(DynamicArray* da, data_type data);
+int da_index_of(DynamicArray* da, int data);
 
-bool da_contains(DynamicArray* da, data_type data);
+bool da_contains(DynamicArray* da, int data);
 
 void da_clear(DynamicArray* da);
 
