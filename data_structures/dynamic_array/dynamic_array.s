@@ -35,17 +35,17 @@ da_create:
 	sub rsp, 16
 	mov [rbp - 8], edi
 	mov edi, 16
-	call Malloc				; allocate the struct
+	call Malloc					; allocate the struct
 	mov [rbp - 16], rax
 	mov edi, [rbp - 8]
-	sal edi, 2				; calculate the array size
-	call Malloc				; allocate the array
+	sal edi, 2					; calculate the array size
+	call Malloc					; allocate the array
 	mov rcx, rax
 	mov rax, [rbp - 16]
-	mov [rax], rcx			; set the array pointer
-	mov dword [rax + 8], 0	; set the size to 0
+	mov [rax], rcx				; set the array pointer
+	mov dword [rax + 8], 0		; set the size to 0
 	mov ecx, [rbp - 8]
-	mov [rax + 12], ecx		; set the capacity
+	mov [rax + 12], ecx			; set the capacity
 	leave
 	ret
 
@@ -73,7 +73,7 @@ da_add_end:
 ;void (DynamicArray* da, int data, int pos)
 da_add_at:
 	cmp edx, [rdi + 8]
-	je da_add
+	je da_add					; do regular add if pos = size
 	push rbp
 	mov rbp, rsp
 	sub rsp, 32
@@ -94,44 +94,120 @@ da_add_at_end:
 	mov rdi, [rdi]
 	mov rsi, rdi
 	sal edx, 2
-	add rdi, rdx
-	add rsi, rdx
-	add rdi, 4
+	add rsi, rdx				; calculate source pos
+	add rdi, rdx	
+	add rdi, 4					; calculate dest pos
 	sal eax, 2
-	sub eax, edx
+	sub eax, edx				; calculate amount to move
 	mov edx, eax
-	call memmove
+	call memmove				; shift elements to the right
 	mov rax, [rbp - 8]
 	mov rcx, [rax]
 	mov edx, [rbp - 12]
 	mov edi, [rbp - 16]
-	mov [rcx + rdi * 4], edx
-	inc dword [rax + 8]
+	mov [rcx + rdi * 4], edx	; put element in pos
+	inc dword [rax + 8]			; increase size
 	leave
 	ret
 
+; int (DynamicArray* da)
 da_remove_last:
+	push rbp
+	mov rbp, rsp
+	dec dword [rdi + 8]			; decrease size
+	mov rax, [rdi]
+	mov ecx, [rdi + 8]
+	mov eax, [rax + rcx * 4]	; get last element
+	leave
 	ret
 
+; int (DynamicArray* da, int pos);
 da_remove_at:
+	inc esi
+	cmp esi, [rdi + 8]
+	je da_remove_last			; do remove_last if pos = size - 1
+	dec esi
+	push rbp
+	mov rbp, rsp
+	sub rsp, 16
+	mov [rbp - 8], rdi
+	mov edx, [rdi + 8]
+	mov rdi, [rdi]
+	mov eax, [rdi + rsi * 4]	; get element at pos
+	mov [rbp - 12], eax
+	sal esi, 2
+	sal edx, 2
+	sub edx, esi				; calculate amount to move
+	add rdi, rsi				; calculate dest pos
+	mov rsi, rdi
+	add rsi, 4					; calculate source pos
+	call memmove				; shift elements to the left
+	mov eax, [rbp - 12]
+	mov rcx, [rbp - 8]
+	dec dword [rcx + 8]			; decrease size
+	leave
 	ret
 
+; bool (DynamicArray* da, int data);
 da_remove:
+	call da_index_of
+	test eax, eax
+	js da_remove_err
+	mov esi, eax
+	call da_remove_at
+	mov eax, 1
 	ret
 
+da_remove_err:
+	mov eax, 0
+	ret
+
+; int (DynamicArray* da, int pos);
 da_get:
+	mov rax, [rdi]
+	mov eax, [rax + rsi * 4]
 	ret
 
+; int (DynamicArray* da, int data, int pos);
 da_set:
+	mov rcx, [rdi]
+	mov eax, [rcx + rdx * 4]
+	mov [rcx + rdx * 4], rsi
 	ret
 
+; int (DynamicArray* da, int data);
 da_index_of:
+	mov rax, [rdi]
+	xor ecx, ecx
+	mov edx, [rdi + 8]
+
+da_index_of_loop:
+	cmp ecx, edx
+	jge da_index_of_err
+	cmp esi, [rax + rcx * 4]
+	je da_index_of_end
+	inc ecx
+	jmp da_index_of_loop
+
+da_index_of_err:
+	mov ecx, -1
+
+da_index_of_end:
+	mov eax, ecx
 	ret
 
+; bool (DynamicArray* da, int data);
 da_contains:
+	call da_index_of
+	xor ecx, ecx
+	test eax, eax
+	mov eax, 1
+	cmovs eax, ecx
 	ret
 
+; void (DynamicArray* da);
 da_clear:
+	mov dword [rdi + 8], 0
 	ret
 
 ;void (DynamicArray* da)

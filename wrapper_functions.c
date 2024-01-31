@@ -32,7 +32,6 @@ void Free(void* ptr) {
 }
 
 void* Realloc(void* ptr, size_t size) {
-    malloc_calls++;
     void* new_ptr;
     if((new_ptr = realloc(ptr, size)) == NULL) 
         exit_with_error("Realloc error");
